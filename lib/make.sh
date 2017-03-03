@@ -16,7 +16,7 @@ if [ -d "$CUDA_PATH" ]; then
 
 	g++ -std=c++11 -shared -o roi_pooling.so roi_pooling_op.cc \
 		roi_pooling_op.cu.o -I $TF_INC  -D GOOGLE_CUDA=1 -fPIC $CXXFLAGS \
-		-lcudart -L $CUDA_PATH/lib64
+		-D_GLIBCXX_USE_CXX11_ABI=0 -lcudart -L $CUDA_PATH/lib64
 else
 	g++ -std=c++11 -shared -o roi_pooling.so roi_pooling_op.cc \
 		-I $TF_INC -fPIC $CXXFLAGS
