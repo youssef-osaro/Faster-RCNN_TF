@@ -51,22 +51,34 @@ def vis_detections(im, class_name, dets,ax, thresh=0.5):
     plt.draw()
 
 
-def demo(sess, net, image_name):
+def demo(sess, net, image_name, save=True):
     """Detect object classes in an image using pre-computed object proposals."""
 
-    # Load the demo image
-    im_file = os.path.join(cfg.DATA_DIR, 'demo', image_name)
-    #im_file = os.path.join('/home/corgi/Lab/label/pos_frame/ACCV/training/000001/',image_name)
-    im = cv2.imread(im_file)
+    if save:
+        # Load the demo image
+        im_file = os.path.join(cfg.DATA_DIR, 'demo', image_name)
+        #im_file = os.path.join('/home/corgi/Lab/label/pos_frame/ACCV/training/000001/',image_name)
+        im = cv2.imread(im_file)
 
-    # Detect all object classes and regress object bounds
-    timer = Timer()
-    timer.tic()
-    scores, boxes = im_detect(sess, net, im)
-    timer.toc()
-    print ('Detection took {:.3f}s for '
-           '{:d} object proposals').format(timer.total_time, boxes.shape[0])
+        # Detect all object classes and regress object bounds
+        timer = Timer()
+        timer.tic()
+        scores, boxes = im_detect(sess, net, im)
+        timer.toc()
+        print ('Detection took {:.3f}s for '
+               '{:d} object proposals').format(timer.total_time, boxes.shape[0])
 
+        np.savez('./data/%s' % image_name, img=im, scores=scores, boxes=boxes)
+
+    else:
+        data = np.load('./data/%s' % image_name)
+        im = data['img']
+        scores = data['scores']
+        boxes = data['boxes']
+        visualize(im, scores, boxes)
+
+
+def visualize(im, scores, boxes):
     # Visualize detections for each class
     im = im[:, :, (2, 1, 0)]
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -96,10 +108,13 @@ def parse_args():
                         default='VGGnet_test')
     parser.add_argument('--model', dest='model', help='Model path',
                         default=' ')
-
+    parser.add_argument('--save', dest='save', help='Save net output or display',
+                        default=True)
     args = parser.parse_args()
 
     return args
+
+
 if __name__ == '__main__':
     cfg.TEST.HAS_RPN = True  # Use RPN for proposals
 
@@ -132,7 +147,8 @@ if __name__ == '__main__':
     for im_name in im_names:
         print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
         print 'Demo for data/demo/{}'.format(im_name)
-        demo(sess, net, im_name)
+        demo(sess, net, im_name, save=args.save)
 
-    plt.show()
+    if not args.save:
+        plt.show()
 
