@@ -71,7 +71,7 @@ def demo(sess, net, image_name, save=True):
         np.savez('./data/%s' % image_name, img=im, scores=scores, boxes=boxes)
 
     else:
-        data = np.load('./data/%s' % image_name)
+        data = np.load('./data/%s.npz' % image_name)
         im = data['img']
         scores = data['scores']
         boxes = data['boxes']
@@ -96,6 +96,7 @@ def visualize(im, scores, boxes):
         dets = dets[keep, :]
         vis_detections(im, cls, dets, ax, thresh=CONF_THRESH)
 
+        
 def parse_args():
     """Parse input arguments."""
     parser = argparse.ArgumentParser(description='Faster R-CNN demo')
@@ -108,8 +109,8 @@ def parse_args():
                         default='VGGnet_test')
     parser.add_argument('--model', dest='model', help='Model path',
                         default=' ')
-    parser.add_argument('--save', dest='save', help='Save net output or display',
-                        default=True)
+    parser.add_argument('--vis', dest='vis', help='Dont run net, visualize results',
+                        action='store_false')
     args = parser.parse_args()
 
     return args
@@ -120,35 +121,42 @@ if __name__ == '__main__':
 
     args = parse_args()
 
-    if args.model == ' ':
-        raise IOError(('Error: Model not found.\n'))
-        
-    # init session
-    sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
-    # load network
-    net = get_network(args.demo_net)
-    # load model
-    saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
-    saver.restore(sess, args.model)
-   
-    #sess.run(tf.initialize_all_variables())
-
-    print '\n\nLoaded network {:s}'.format(args.model)
-
-    # Warmup on a dummy image
-    im = 128 * np.ones((300, 300, 3), dtype=np.uint8)
-    for i in xrange(2):
-        _, _= im_detect(sess, net, im)
-
     im_names = ['000456.jpg', '000542.jpg', '001150.jpg',
                 '001763.jpg', '004545.jpg']
 
+    if args.model == ' ':
+        raise IOError(('Error: Model not found.\n'))
 
-    for im_name in im_names:
-        print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-        print 'Demo for data/demo/{}'.format(im_name)
-        demo(sess, net, im_name, save=args.save)
+    if args.vis:
+        # init session
+        sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
+        # load network
+        net = get_network(args.demo_net)
+        # load model
+        saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
+        saver.restore(sess, args.model)
+   
+        #sess.run(tf.initialize_all_variables())
 
-    if not args.save:
+        print '\n\nLoaded network {:s}'.format(args.model)
+
+        # Warmup on a dummy image
+        im = 128 * np.ones((300, 300, 3), dtype=np.uint8)
+        for i in xrange(2):
+            _, _= im_detect(sess, net, im)
+
+
+
+        for im_name in im_names:
+            print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+            print 'Demo for data/demo/{}'.format(im_name)
+            demo(sess, net, im_name, save=args.vis)
+
+    else:
+        for im_name in im_names:
+            print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+            print 'Demo for data/demo/{}'.format(im_name)
+            demo(None, None, im_name, save=args.vis)
+
         plt.show()
 
